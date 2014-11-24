@@ -19,6 +19,7 @@ public:
 private:
     void sendCmd(byte* cmd);
     boolean cmdUpdate();
+    boolean waitForCmd();
 
 private:
     byte card;               // 0 : no card 1:ISO15693 2:Felica
@@ -41,6 +42,8 @@ private:
     int lcd_rows;
     int lcd_statusline;
     boolean lcd_enabled;
+
+    unsigned long lastcard; // Last time there was a successful card read.
 
 };
 

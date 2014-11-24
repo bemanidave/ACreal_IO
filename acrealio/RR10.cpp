@@ -12,6 +12,7 @@ RR10::RR10()
   incmd = false;
   readstatus = 0;
   lcd_enabled = false;
+  lastcard = 0;
 }
 
 void RR10::setPins(int sensor, HardwareSerial* serialid)
@@ -38,7 +39,7 @@ void RR10::update()
   card = 0;
   rfidp[0] = 0;
   rfidp[2] = 0;
-      
+
    switch(readstatus)
    {
      case 0:
@@ -47,11 +48,7 @@ void RR10::update()
      byte cmd[7] = {0x07,0x06,0x00,0x00,0x00}; //command 0x06 : ISO15693 Tag Inventory (params : normal mode, no AFI)
      sendCmd(cmd);
 
-     while (!cmdUpdate()) {
-       // Do nothing.
-     }
-     
-     if(rfidp[2] != 0)//tag found
+     if(waitForCmd() && rfidp[2] != 0)//tag found
       {
 	  //at least one tag is found, let's read the uid of the first tag (extra tags are ignored)
         for(int i=0;i<8;i++)
@@ -71,6 +68,7 @@ void RR10::update()
           card = 1;
           readcmd = false;
           readstatus = 0;
+          lastcard = millis();
 
           if (lcd_enabled) {
              if (lcd_rows == 4) {
@@ -108,11 +106,8 @@ void RR10::update()
      //no ISO15696 found, let's try to find some FeliCa instead
      byte cmd[4] = {0x04,0x0E,0x00,0x0A}; //command 0x0E : FeliCa Tag Inventory
      sendCmd(cmd);
-     while (!cmdUpdate()) {
-       // Do nothing.
-     }
 
-     if(rfidp[2] != 0)//tag found
+     if(waitForCmd() && rfidp[2] != 0)//tag found
       {
         
  //at least one tag is found, let's read the uid of the first tag (extra tags are ignored)
@@ -150,6 +145,7 @@ void RR10::update()
         card = 2;
         readcmd = false;
         readstatus = 0;
+        lastcard = millis();
         break;
       }
      readstatus = 2;
@@ -165,15 +161,11 @@ void RR10::update()
      byte cmd[5] = {0x05,0x09,0x00,0x00,0x00}; //command 0x09 : ISO14443 Tag Inventory 
      sendCmd(cmd);
 
-     while (!cmdUpdate()) {
-        // Do nothing.
-     }
-     
      // Had some weird readings, so be paranoid here. Explanation:
      // rfidp[0] is the length, 0x0E if no tags found
      // rfidp[3] is the number of tags found, maximum of 8
      // rfidp[4] is the length of the first UID, which can be 3, 7, or 10.
-     if(rfidp[0] > 0x0E && rfidp[3] > 0 && rfidp[3] < 8 && rfidp[4] > 2 && rfidp[4] < 11)//tag found
+     if(waitForCmd() && rfidp[0] > 0x0E && rfidp[3] > 0 && rfidp[3] < 8 && rfidp[4] > 2 && rfidp[4] < 11)//tag found
       {
         int uidlen = rfidp[4];
         byte realuid[uidlen];
@@ -219,7 +211,7 @@ void RR10::update()
             lcd->setCursor(0,1);
             sprintf(line2,"P%d ISO14443A ID:",readerNumber);
             lcd->print(line2);
-
+  
             lcd->setCursor(-4,2);
             lcd->print("                ");
             lcd->setCursor(-4,2);
@@ -235,9 +227,28 @@ void RR10::update()
           lcd->print(lcdline);
         }
 
-		
+
         card = 1;
         readcmd = false;
+        lastcard = millis();
+     } else {
+       // IIDX gets annoyed after 10 minutes of inactivity. I can't figure out
+       // what it's after, so make some crap up.
+       unsigned long curtime = millis();
+       unsigned long kick_interval = 100000;
+       if (curtime > lastcard + kick_interval || curtime < lastcard + 2000) {
+         card = 1;
+         readcmd = false;
+
+         if (curtime > lastcard + kick_interval) {
+           lastcard = millis();
+         }
+         uid[0] = 0xE0;
+         uid[1] = 0x11;
+         for (int i = 2; i < 8; i++) {
+           uid[i] = 0x00;
+         } 
+       }
      }
      
      // Regardless of whether we got something here or not, readstatus goes
@@ -365,6 +376,38 @@ boolean RR10::cmdUpdate()
       
     return false;
     
+}
+
+// Try to fully process a command
+boolean RR10::waitForCmd()
+{
+  boolean cmdResult = false;
+  unsigned long time = millis();
+
+//  char line[17];
+//  lcd->setCursor(0,0);
+//  sprintf(line,"Beg%13lu",time);
+//  lcd->print(line);
+
+  while (millis() - time < 5000) {
+//    lcd->setCursor(0,1);
+//    sprintf(line,"Cnt%13lu",millis());
+//    lcd->print(line);
+    if (cmdUpdate()) {
+//      lcd->setCursor(-4,2);
+//      sprintf(line,"Brk%13lu",millis());
+//      lcd->print(line);
+
+      cmdResult = true;
+      break;
+    }
+  }
+
+//  lcd->setCursor(-4,3);
+//  sprintf(line,"End%13lu",millis());
+//  lcd->print(line);
+
+  return cmdResult;
 }
 
 void RR10::setReaderNumber(int reader)
