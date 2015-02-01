@@ -115,21 +115,21 @@ RR10 mod2;
 //
 void setup()
 {
-  if (USE_LCD) {
-    // Set up the LCD.
-    lcd.begin(16,LCD_ROWS);
-    lcd.createChar(0,eyeeye);
-    lcd.noAutoscroll();
-    if (LCD_STATUSLINE > 1) {
-      lcd.setCursor(-4,LCD_STATUSLINE);
-    } else {
-      lcd.setCursor(0,LCD_STATUSLINE);
-    }
-    lcd.print("Have an enjoying");
-    lcd.setCursor(0,0);
-    mod1.setLcd(&lcd,LCD_ROWS,LCD_STATUSLINE);
-    mod1.setReaderNumber(1);
+#if USE_LCD == 1
+  // Set up the LCD.
+  lcd.begin(16,LCD_ROWS);
+  lcd.createChar(0,eyeeye);
+  lcd.noAutoscroll();
+  if (LCD_STATUSLINE > 1) {
+    lcd.setCursor(-4,LCD_STATUSLINE);
+  } else {
+    lcd.setCursor(0,LCD_STATUSLINE);
   }
+  lcd.print("Have an enjoying");
+  lcd.setCursor(0,0);
+  mod1.setLcd(&lcd,LCD_ROWS,LCD_STATUSLINE);
+  mod1.setReaderNumber(1);
+#endif
 
   // set nodes configuration
   
@@ -146,9 +146,9 @@ void setup()
    
    nbnodes = 2;
 
-   if (USE_LCD) {
-     lcd.print("Pop'n + CardDisp");
-   }
+#if USE_LCD == 1
+   lcd.print("Pop'n + CardDisp");
+#endif
 
 #elif GAMETYPE == 1 //1 reader
 
@@ -158,9 +158,9 @@ void setup()
    
    nbnodes = 1;
 
-   if (USE_LCD) {
-     lcd.print("Pop'n/DrumMania");
-   }
+#if USE_LCD == 1
+   lcd.print("Pop'n/DrumMania");
+#endif
 
 #elif GAMETYPE == 2 //2 readers
    //1p reader
@@ -170,9 +170,9 @@ void setup()
    
    //set rfid module 2
    mod2.setReaderNumber(2);
-   if (USE_LCD) {
-     mod2.setLcd(&lcd,LCD_ROWS,LCD_STATUSLINE);
-   }
+#if USE_LCD == 1
+   mod2.setLcd(&lcd,LCD_ROWS,LCD_STATUSLINE);
+#endif
 
    mod2.setPins(R2_DET,&R2_SER);
    nod2.setRfidModule(&mod2);
@@ -184,10 +184,10 @@ void setup()
    
    nbnodes = 2;
 
-   if (USE_LCD) {
-     lcd.write(byte(0));
-     lcd.print("DX / DDRSD / GF");
-   }
+#if USE_LCD == 1
+   lcd.write(byte(0));
+   lcd.print("DX / DDRSD / GF");
+#endif
 
 #elif GAMETYPE == 3 // reader + leboard
 
@@ -197,9 +197,9 @@ void setup()
    
    nbnodes = 2;
 
-   if (USE_LCD) {
-     lcd.print("Jubeat");
-   }
+#if USE_LCD == 1
+   lcd.print("Jubeat");
+#endif
 
 
 #elif GAMETYPE == 4 // reader + ioboard
@@ -212,9 +212,9 @@ void setup()
    
    nbnodes = 2;
 
-   if (USE_LCD) {
+#if USE_LCD == 1
      lcd.print("SDVX (Whoosh!)");
-   }
+#endif
    
 #else // 2readers + DDR ??? board
 
@@ -225,9 +225,9 @@ void setup()
    
    //set rfid module 2
    mod2.setReaderNumber(2);
-   if (USE_LCD) {
-     mod2.setLcd(&lcd,LCD_ROWS,LCD_STATUSLINE);
-   }
+#if USE_LCD == 1
+   mod2.setLcd(&lcd,LCD_ROWS,LCD_STATUSLINE);
+#endif
 
    mod2.setPins(R2_DET,&R2_SER);
    nod2.setRfidModule(&mod2);
@@ -241,9 +241,9 @@ void setup()
    
    nbnodes = 3;
 
-   if (USE_LCD) {
-     lcd.print("DanceDanceRev HD");
-   }
+#if USE_LCD == 1
+   lcd.print("DanceDanceRev HD");
+#endif
 
 #endif
 
