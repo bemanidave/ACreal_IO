@@ -94,6 +94,25 @@ void SL015M::update()
                       card = 0;
                       
                     readcmd = false;//reading finished (card found)
+                    
+                    if (lcd_enabled) {/*
+                       if (lcd_rows == 4) {
+                         lcd->setCursor(0,1);
+                         char line2[17];
+                         sprintf(line2,"P%d ISO15693     ",uid);
+                         lcd->print(line2);
+             
+                         lcd->setCursor(-4,2);
+                         lcd->print("e-AMUSEMENT PASS");
+                       }
+          
+                     if (LCD_STATUSLINE > 1) {
+                       lcd->setCursor(-4,LCD_STATUSLINE);
+                     } else {
+                       lcd->setCursor(0,LCD_STATUSLINE);
+                     }
+                     lcd->print(lcdline);*/
+                    }
 
                   }
                 }
@@ -116,7 +135,7 @@ void SL015M::update()
     }
 }
 
-boolean SL015M::isCardPresent()
+byte SL015M::isCardPresent()
 {
 	return card;
 }
