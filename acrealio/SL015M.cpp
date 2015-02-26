@@ -30,15 +30,15 @@ void SL015M::update()
   
   if(!pinset)
     return;
-  if(!readcmd)
+  if(!readcmd) {
     return;
+  }
   
     if(digitalRead(rfSENSOR)==LOW)             // card presence
     {
         
         if(!rfcmdsent)
         {
-        
           rfSerial->write(0xBA);                  // pream
           rfSerial->write(0x02);                  // size
           rfSerial->write(0x31);                  // rfidcommand: get tag info
@@ -105,24 +105,18 @@ void SL015M::update()
                     readcmd = false;//reading finished (card found)
                     
                     if (lcd_enabled) {
+                       int rowA = 0;
                        if (lcd_rows == 4) {
-                         lcd->setCursor(0,1);
-                         char line2[17];
-                         sprintf(line2,"P%d ISO15693     ",uid);
-                         lcd->print(line2);
-             
-                         lcd->setCursor(-4,2);
-                         lcd->print("e-AMUSEMENT PASS");
+                         rowA = 1;
                        }
-          
-                     if (LCD_STATUSLINE > 1) {
-                       lcd->setCursor(-4,LCD_STATUSLINE);
-                     } else {
+                       
+                       // Omitted: Card type identifier.
+                       
+                       lcd->setCursor(0,rowA);
+                       lcd->print("e-AMUSEMENT PASS");
                        lcd->setCursor(0,LCD_STATUSLINE);
-                     }
-                     lcd->print(lcdline);
+                       lcd->print(lcdline);
                     }
-
                   }
                 }
               }

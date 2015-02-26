@@ -37,7 +37,7 @@ byte eyeeye[8] = {
 };
 
 #if USE_LCD==1
-    LiquidCrystal lcd(LCD_RS,LCD_EN,LCD_D4,LCD_D5,LCD_D6,LCD_D7);
+    LiquidCrystal lcd(LCD_RS,41,LCD_EN,LCD_D4,LCD_D5,LCD_D6,LCD_D7);
 #endif
 
 /////////////////////////
@@ -125,7 +125,7 @@ void setup()
   } else {
     lcd.setCursor(0,LCD_STATUSLINE);
   }
-  lcd.print("Have an enjoying");
+  lcd.print("Enjoy your game!");
   lcd.setCursor(0,0);
   mod1.setLcd(&lcd,LCD_ROWS,LCD_STATUSLINE);
   mod1.setReaderNumber(1);

@@ -6,7 +6,7 @@
 #define RFID_BAUD 115200		//Baud rate for RFID Module
 
 #define RFID_MODULE1 1			//Rfid module used for reader1, 1:SL015M 2:RR10
-#define RFID_MODULE2 2			//Rfid module used for reader2, 1:SL015M 2:RR10
+#define RFID_MODULE2 1			//Rfid module used for reader2, 1:SL015M 2:RR10
 
 #define SDVX_VOL_SENS 7        //Sensitivity for SDVX Volume buttons
 
@@ -44,7 +44,7 @@
 #define LCD_D5 47
 #define LCD_D6 45
 #define LCD_D7 43
-#define LCD_ROWS 4
+#define LCD_ROWS 2
 #define LCD_STATUSLINE LCD_ROWS-1
 
 
@@ -63,7 +63,7 @@
 #define LED3_B 11
 
 //pins for card reader 1 keypad (colls ABC, rows 1234)
-/* 
+/*
 ### Keypad 3x4 Matrix ###
 
  (7)---(8)---(9)---> ROW 4
@@ -88,7 +88,7 @@ COL C  COL B  COL A
 
 
 //pins for card reader 1 RFID Module
-#define R1_DET 20 
+#define R1_DET 20
 #define R1_SER Serial1
 
 //pins for card reader 2 keypad (colls ABC, rows 1234)
