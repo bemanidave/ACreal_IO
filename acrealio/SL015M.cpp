@@ -116,7 +116,7 @@ void SL015M::update()
     }
 }
 
-boolean SL015M::isCardPresent()
+byte SL015M::isCardPresent()
 {
 	return card;
 }
