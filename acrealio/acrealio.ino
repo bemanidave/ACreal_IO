@@ -96,8 +96,6 @@ SL015M mod1;
 RR10 mod1;
 #endif
 
-
-
 //2P rfid module allocation
 #if GAMETYPE == 2 || GAMETYPE == 5
 #if RFID_MODULE2 == 1
@@ -129,6 +127,8 @@ void setup()
     lcd.setCursor(0,0);
     mod1.setLcd(&lcd,LCD_ROWS,LCD_STATUSLINE);
     mod1.setReaderNumber(1);
+    nod1.setLcd(&lcd,LCD_ROWS,LCD_STATUSLINE);
+    nod1.setReaderNumber(1);
   }
 
   // set nodes configuration
@@ -170,8 +170,10 @@ void setup()
    
    //set rfid module 2
    mod2.setReaderNumber(2);
+   nod2.setReaderNumber(2);
    if (USE_LCD) {
      mod2.setLcd(&lcd,LCD_ROWS,LCD_STATUSLINE);
+     nod2.setLcd(&lcd,LCD_ROWS,LCD_STATUSLINE);
    }
 
    mod2.setPins(R2_DET,&R2_SER);
@@ -296,12 +298,11 @@ void serialEvent(){
         if(checkRequestChecksum() )
         {
           //a correct command have been received and needs to be processed
-          
           if(request[0] == 0x00 && request[2] == 0x01) // node enumeration command
             nodeEnum();
           else
           {
-            if(request[0] >= node_id  && request[0] < node_id+nbnodes)//command recipient is one of our nodes
+            if(request[0] >= node_id  && request[0] < node_id+nbnodes) //command recipient is one of our nodes
               processRequest();
             else //if it's not for us, (cmd aimed at another node or at the host) send it to next node
               forwardRequest();
@@ -416,6 +417,11 @@ boolean checkRequestChecksum()
 void processRequest(){
   Node *rd = nodes[request[0] - node_id];//get the node to which the command is adressed
   byte answer[256];
+
+  char msg[4];
+  sprintf(msg,"PR%u",request[0]);
+  debugPrint(msg);
+  
   rd->processRequest(request, answer);//have it process the request
   sendAnswer(answer);
 
@@ -524,3 +530,13 @@ long detRate()
 
    return baudrates[i];
   } 
+
+void debugPrint(char* message)
+{
+  lcd.setCursor(8,0);
+
+  char lcdmessage[17];
+  sprintf(lcdmessage,"%s %u",message,millis()/100);
+
+  lcd.print(lcdmessage);
+}

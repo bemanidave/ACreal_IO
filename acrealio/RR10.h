@@ -12,6 +12,7 @@ public:
     void setPins(int sensor, HardwareSerial* serialid);
     void read();
     void update();	
+    void debugPrint(char* message); 
     byte isCardPresent();
     void getUID(byte* uid);	
     void setReaderNumber(int reader);
@@ -27,6 +28,7 @@ private:
     HardwareSerial* rfSerial;    // rfid Serial
     boolean pinset;  // pin init done flag
     boolean readcmd; // read request from host flag
+    boolean sentcmd; // Has the command been sent?
     
     boolean incmd; // command is being processed
     byte command[256]; //command

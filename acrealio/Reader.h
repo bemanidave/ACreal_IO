@@ -5,6 +5,7 @@
 #include "Cipher.h"
 #include "Node.h"
 #include "RfidModule.h"
+#include <LiquidCrystal.h>
 
 class Reader : public Node
 {
@@ -23,6 +24,11 @@ public:
     
     virtual void getStatus(byte* buf);
     void readRfid();
+
+    void setLcd(LiquidCrystal *passed_lcd, int lcd_rows, int lcd_statusline);
+    void debugPrint(char* message);
+    void setReaderNumber(int reader);
+
 
 private:
     boolean acceptcard;         // reader state, accepting cards or not (for emulating old readers)
@@ -44,6 +50,14 @@ private:
     Cipher crypt; 
     
     RfidModule* rfmodule;
+
+    int readerNumber;           // P1 or P2?
+    LiquidCrystal *lcd;
+    int lcd_rows;
+    int lcd_statusline;
+    boolean lcd_enabled;
+
+
 };
 
 #endif

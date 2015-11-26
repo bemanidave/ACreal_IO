@@ -8,6 +8,15 @@ Reader::Reader()
 { 
 		keypadInitDone = false;
                 new_reader = false;
+
+}
+
+void Reader::setLcd(LiquidCrystal *passed_lcd, int passed_lcd_rows, int passed_lcd_statusline)
+{
+    lcd = passed_lcd;
+    lcd_rows = passed_lcd_rows;
+    lcd_statusline = passed_lcd_statusline;
+    lcd_enabled = true;
 }
 
 //cmd61 is used to specify behaviour on command 0x61
@@ -226,21 +235,47 @@ void Reader::getStatus(byte* buf)
   
 }
 
+void Reader::setReaderNumber(int reader)
+{
+    readerNumber = reader;
+}
+
+void Reader::debugPrint(char* message)
+{
+  if (readerNumber == 1) {
+      lcd->setCursor(0,0);
+  } else {
+    if (LCD_STATUSLINE > 1) {
+      lcd->setCursor(-4,LCD_STATUSLINE);
+    } else {
+      lcd->setCursor(0,LCD_STATUSLINE);
+    }
+  }
+
+  char lcdmessage[17];
+  sprintf(lcdmessage,"%s %u",message,millis()/100);
+
+  lcd->print(lcdmessage);
+}
 
 
 short Reader::processRequest(byte* request, byte* answer)
 {  
+
+  bool debug = true;
   answer[0] = request[0] | 0x80;        // reader id
   answer[1] = request[1];               //  ?
   answer[2] = request[2];               // command
   answer[3] = request[3];               // paquet id
   answer[4] = 0;                        // data length
  
+      lcd->setCursor(0,0);
   switch (answer[2])                   // switch on the command
   {
     //
     // get version
     case 0x02:
+      if (debug) { debugPrint("0x02"); };
       answer[4] = 0x2C;
       memcpy(answer+5, getVersion(), 0x2C);
       break;
@@ -248,10 +283,15 @@ short Reader::processRequest(byte* request, byte* answer)
     //
     // init?
     case 0x00:
+      if (debug) { debugPrint("0x00"); };
     case 0x03:
+      if (debug) { debugPrint("0x03"); };
     case 0x16:
+      if (debug) { debugPrint("0x16"); };
     case 0x20:
+      if (debug) { debugPrint("0x20"); };
     case 0x30:
+      if (debug) { debugPrint("0x30"); };
     
     //re-init (if game is changed)
     new_reader = false;
@@ -263,7 +303,7 @@ short Reader::processRequest(byte* request, byte* answer)
     //
     // read card uid (old readers)
     case 0x31:
-    
+      if (debug) { debugPrint("0x31"); };
     rfmodule->read();
     
     
@@ -276,6 +316,7 @@ short Reader::processRequest(byte* request, byte* answer)
     //
     // set action (old readers) return same as 0x34
     case 0x35:
+      if (debug) { debugPrint("0x35"); };
       switch(request[6])
       {
         case 0x00: 
@@ -295,15 +336,18 @@ short Reader::processRequest(byte* request, byte* answer)
     //
     // get status (all except pop'n music new readers)
     case 0x34:
+      if (debug) { debugPrint("0x34"); };
       answer[4] = 0x10;               // 16 bytes of data
       
       if(!new_reader) //when simulating old slotted readers, rfid need to be read continously to detect card (since games using old readers only send reading command when sensors are activated)
         rfmodule->read();   
+      if (debug) { debugPrint("1x34"); };
     
       
       getStatus(answer+5);
       
       
+      if (debug) { debugPrint("2x34"); };
 
       break;
       
@@ -311,6 +355,7 @@ short Reader::processRequest(byte* request, byte* answer)
       
     // sleep mode
     case 0x3A:
+      if (debug) { debugPrint("0x3A"); };
       answer[4] = 0x01;              
       answer[5] = 0x00;
       
@@ -321,6 +366,7 @@ short Reader::processRequest(byte* request, byte* answer)
     //
     // key exchange (for popn new wavepass readers)
     case 0x60:
+      if (debug) { debugPrint("0x60"); };
       if(request[4] == 4)//check if there is four bytes of data (32bits key)
       {
               unsigned long reckey = ((unsigned long) request[5]) <<24 | ((unsigned long) request[6]) <<16 | ((unsigned long) request[7]) <<8 | (unsigned long) request[8];
@@ -340,6 +386,7 @@ short Reader::processRequest(byte* request, byte* answer)
     //
     // Rfid read cards UID (for new wave pass readers)
     case 0x61:
+      if (debug) { debugPrint("0x61"); };
     new_reader = true; //only new readers issue this command
     
     rfmodule->read();    
@@ -366,6 +413,7 @@ short Reader::processRequest(byte* request, byte* answer)
     //
     // get status (for pop'n new wavepass readers)
     case 0x64:
+      if (debug) { debugPrint("0x64"); };
       if(request[4] == 1)
       {
           getStatus(answer+5);
@@ -380,6 +428,12 @@ short Reader::processRequest(byte* request, byte* answer)
           answer[4]=18;
       }
       break;
+    default:
+      if (debug) {
+	char hex[3];
+	sprintf(hex,"%X",answer[2]);
+	debugPrint(hex);
+      }
     }
 
 

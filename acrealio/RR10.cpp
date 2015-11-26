@@ -26,239 +26,270 @@ void RR10::setPins(int sensor, HardwareSerial* serialid)
 
 void RR10::update()
 {
-  if(!pinset)
-	return;
-  if(!readcmd)
-      return;
+    if(!pinset)
+        return;
+    if(!readcmd)
+        return;
 
-  // 16 chars + null
-  char lcdline[17];
-  char hex[2];
+    bool debug = false;
 
-  // Reset important bits of state
-  card = 0;
-  rfidp[0] = 0;
-  rfidp[2] = 0;
+    // 16 chars + null
+    char lcdline[17];
+    char hex[2];
 
-   switch(readstatus)
-   {
-     case 0:
-     {
-     //let's read ISO15693 first
-     byte cmd[7] = {0x07,0x06,0x00,0x00,0x00}; //command 0x06 : ISO15693 Tag Inventory (params : normal mode, no AFI)
-     sendCmd(cmd);
-
-     if(waitForCmd() && rfidp[2] != 0)//tag found
-      {
-	  //at least one tag is found, let's read the uid of the first tag (extra tags are ignored)
-        for(int i=0;i<8;i++)
+    switch(readstatus)
+    {
+        case 0:
         {
-           uid[i] = rfidp[11-i];
-           if (i == 0) {
-              sprintf(lcdline,"%02X",uid[i]);
-           } else {
-              sprintf(hex,"%02X",uid[i]);
-              strcat(lcdline,hex);
-           }
-        }			
+            //let's read ISO15693 first
+            byte cmd[7] = {0x07,0x06,0x00,0x00,0x00}; //command 0x06 : ISO15693 Tag Inventory (params : normal mode, no AFI)
+            sendCmd(cmd);
+ 
+            if (debug) {
+                debugPrint("Sent ISO15693");
+            }
+
+            if(cmdUpdate())
+            {
+                if (rfidp[2] != 0)//tag found
+                {
+                    if (debug) {
+                        debugPrint("Found 15693");
+                    }
+
+                    //at least one tag is found, let's read the uid of the first tag (extra tags are ignored)
+                    for(int i=0;i<8;i++)
+                    {
+                        uid[i] = rfidp[11-i];
+                        if (i == 0) {
+                            sprintf(lcdline,"%02X",uid[i]);
+                        } else {
+                            sprintf(hex,"%02X",uid[i]);
+                            strcat(lcdline,hex);
+                        }
+                    }			
 
 
-        if(uid[0] == 0xE0 && uid[1] == 0x04)  // if correct konami card, reading is done, don't every bother to check for Felica
-        {
-          card = 1;
-          readcmd = false;
-          readstatus = 0;
-          lastcard = millis();
+                    if(uid[0] == 0xE0 && uid[1] == 0x04)  // if correct konami card, reading is done, don't every bother to check for Felica
+                    {
+                        card = 1;
+                        readcmd = false;
+                        readstatus = 0;
+                        lastcard = millis();
 
-          if (lcd_enabled) {
-             if (lcd_rows == 4) {
-               lcd->setCursor(0,1);
-               char line2[17];
-               sprintf(line2,"P%d ISO15693     ",readerNumber);
-               lcd->print(line2);
+                        if (lcd_enabled) {
+                            if (lcd_rows == 4) {
+                                lcd->setCursor(0,1);
+                                char line2[17];
+                                sprintf(line2,"P%d ISO15693     ",readerNumber);
+                                lcd->print(line2);
    
-               lcd->setCursor(-4,2);
-               lcd->print("e-AMUSEMENT PASS");
-             }
+                                lcd->setCursor(-4,2);
+                                lcd->print("e-AMUSEMENT PASS");
+                            }
 
-           if (LCD_STATUSLINE > 1) {
-             lcd->setCursor(-4,LCD_STATUSLINE);
-           } else {
-             lcd->setCursor(0,LCD_STATUSLINE);
-           }
-           lcd->print(lcdline);
-          }
+                            if (LCD_STATUSLINE > 1) {
+                                lcd->setCursor(-4,LCD_STATUSLINE);
+                            } else {
+                                lcd->setCursor(0,LCD_STATUSLINE);
+                            }
+                            lcd->print(lcdline);
+                        }
 
-          break;
-       }
-     }
-  
-     // Obviously not one of them.
-     readstatus = 1;
-     break;
-     
-     
-     }
+                        break;
+                    }
+                } else {
+                    if (debug) {
+                        debugPrint("Not 15693");
+                    }
+                    // Obviously not one of them.
+                    readstatus = 1;
+                }
+            }
+
+            break;
+        }
      
       
-     case 1:
-     {
-     //no ISO15696 found, let's try to find some FeliCa instead
-     byte cmd[4] = {0x04,0x0E,0x00,0x0A}; //command 0x0E : FeliCa Tag Inventory
-     sendCmd(cmd);
+        case 1:
+        {
+            //no ISO15696 found, let's try to find some FeliCa instead
+            byte cmd[4] = {0x04,0x0E,0x00,0x0A}; //command 0x0E : FeliCa Tag Inventory
+            sendCmd(cmd);
 
-     if(waitForCmd() && rfidp[2] != 0)//tag found
-      {
+            if (debug) {
+                debugPrint("Sent FeLica");
+            }
+
+
+            if(cmdUpdate()){
+                if (rfidp[2] != 0)//tag found
+                {
+
+                    if (debug) {
+                        debugPrint("Found FeLica");
+                    }
         
- //at least one tag is found, let's read the uid of the first tag (extra tags are ignored)
-        for(int i=0;i<8;i++)
-        {
-           uid[i] = rfidp[3+i];
-           if (i == 0) {
-              sprintf(lcdline,"%02X",uid[i]);
-           } else {
-              sprintf(hex,"%02X",uid[i]);
-              strcat(lcdline,hex);
-           }
-        }			
+                    //at least one tag is found, let's read the uid of the first tag (extra tags are ignored)
+                    for(int i=0;i<8;i++)
+                    {
+                        uid[i] = rfidp[3+i];
+                        if (i == 0) {
+                            sprintf(lcdline,"%02X",uid[i]);
+                        } else {
+                            sprintf(hex,"%02X",uid[i]);
+                            strcat(lcdline,hex);
+                        }
+                    }			
 
-        if (lcd_enabled) {
-           if (lcd_rows == 4) {
-             lcd->setCursor(-4,1);
-             char line2[17];
-             sprintf(line2,"P%d FeliCa       ",readerNumber);
-             lcd->print(line2);
+                    if (lcd_enabled) {
+                        if (lcd_rows == 4) {
+                            lcd->setCursor(-4,1);
+                            char line2[17];
+                            sprintf(line2,"P%d FeliCa       ",readerNumber);
+                            lcd->print(line2);
  
-             lcd->setCursor(-4,2);
-             lcd->print("e-AMUSEMENT PASS");
-           }
+                            lcd->setCursor(-4,2);
+                            lcd->print("e-AMUSEMENT PASS");
+                        }
 
-           if (LCD_STATUSLINE > 1) {
-             lcd->setCursor(-4,LCD_STATUSLINE);
-           } else {
-             lcd->setCursor(0,LCD_STATUSLINE);
-           }
+                        if (LCD_STATUSLINE > 1) {
+                            lcd->setCursor(-4,LCD_STATUSLINE);
+                        } else {
+                            lcd->setCursor(0,LCD_STATUSLINE);
+                        }
 
-           lcd->print(lcdline);
+                        lcd->print(lcdline);
+                    }
+
+                    card = 2;
+                    readcmd = false;
+                    readstatus = 0;
+                    lastcard = millis();
+                } else {
+                    readstatus = 2;
+                    if (debug) {
+                        debugPrint("No FeLica");
+                    }
+                }
+            }      
+
+            break;
         }
 
-        card = 2;
-        readcmd = false;
-        readstatus = 0;
-        lastcard = millis();
-        break;
-      }
-     readstatus = 2;
-     break;
-     
-     }      
-
-     case 2:
-     {
-     // Give ISO14443-A a go, e.g. mifare classic.
-     // Hashes the ID it gets back
-
-     byte cmd[5] = {0x05,0x09,0x00,0x00,0x00}; //command 0x09 : ISO14443 Tag Inventory 
-     sendCmd(cmd);
-
-     // Had some weird readings, so be paranoid here. Explanation:
-     // rfidp[0] is the length, 0x0E if no tags found
-     // rfidp[3] is the number of tags found, maximum of 8
-     // rfidp[4] is the length of the first UID, which can be 3, 7, or 10.
-     if(waitForCmd() && rfidp[0] > 0x0E && rfidp[3] > 0 && rfidp[3] < 8 && rfidp[4] > 2 && rfidp[4] < 11)//tag found
-      {
-        int uidlen = rfidp[4];
-        byte realuid[uidlen];
-        char hexrealuid[uidlen+4];
-          
-        unsigned char key[] = {0xe8, 0x0b, 0x6e, 0x3a, 0x12, 0x11, 0x40, 0x57,
-                               0x7c, 0x7b, 0xea, 0x17, 0x64, 0x08, 0xe8, 0x6e};
-
-        sipHash.initFromRAM(key);
-
-        // Read a UID!
-        for(int i=0;i<uidlen;i++)
+        case 2:
         {
-           realuid[i] = rfidp[12+i];
-           sipHash.updateHash((byte)realuid[i]);
+            // Give ISO14443-A a go, e.g. mifare classic.
+            // Hashes the ID it gets back
+            byte cmd[5] = {0x05,0x09,0x00,0x00,0x00}; //command 0x09 : ISO14443 Tag Inventory 
 
-           if (lcd_rows == 4) {
-             if (i == 0) {
-                sprintf(hexrealuid,"%02X",realuid[i]);
-             } else {
-                sprintf(hex,"%02X",realuid[i]);
-                strcat(hexrealuid,hex);
-             }
-          }
-        }
+            if (debug) {
+                debugPrint("Finding 14443");
+            }
+            sendCmd(cmd);
+
+            // Had some weird readings, so be paranoid here. Explanation:
+            // rfidp[0] is the length, 0x0E if no tags found
+            // rfidp[3] is the number of tags found, maximum of 8
+            // rfidp[4] is the length of the first UID, which can be 3, 7, or 10.
+            if(cmdUpdate()) {
+                if (rfidp[0] > 0x0E && rfidp[3] > 0 && rfidp[3] < 8 && rfidp[4] > 2 && rfidp[4] < 11)//tag found
+                {
+                    if (debug) {
+                        debugPrint("Found 14443");
+                    }
+                    int uidlen = rfidp[4];
+                    byte realuid[uidlen];
+                    char hexrealuid[uidlen+4];
+      
+                    unsigned char key[] = {0xe8, 0x0b, 0x6e, 0x3a, 0x12, 0x11, 0x40, 0x57,
+                                           0x7c, 0x7b, 0xea, 0x17, 0x64, 0x08, 0xe8, 0x6e};
+
+                    sipHash.initFromRAM(key);
+
+                    // Read a UID!
+                    for(int i=0;i<uidlen;i++)
+                    {
+                        realuid[i] = rfidp[12+i];
+                        sipHash.updateHash((byte)realuid[i]);
+
+                        if (lcd_rows == 4) {
+                            if (i == 0) {
+                                sprintf(hexrealuid,"%02X",realuid[i]);
+                            } else {
+                                sprintf(hex,"%02X",realuid[i]);
+                                strcat(hexrealuid,hex);
+                            }
+                        }
+                    }
 	
-        sipHash.finish();
+                    sipHash.finish();
 
-        uid[0] = 0xE0;
-        uid[1] = 0x04;
-        sprintf(lcdline,"%s","E004");
+                    uid[0] = 0xE0;
+                    uid[1] = 0x04;
+                    sprintf(lcdline,"%s","E004");
 
-        for(int i = 2; i < 8; i++) {
-            uid[i] = (byte)sipHash.result[i];
-            sprintf(hex,"%02X",uid[i]);
-            strcat(lcdline,hex);
-        }
+                    for(int i = 2; i < 8; i++) {
+                        uid[i] = (byte)sipHash.result[i];
+                        sprintf(hex,"%02X",uid[i]);
+                        strcat(lcdline,hex);
+                    }
 
-        if (lcd_enabled) {
-          if (lcd_rows == 4) {
-            char line2[17];
+                    if (lcd_enabled) {
+                        if (lcd_rows == 4) {
+                            char line2[17];
 
-            lcd->setCursor(0,1);
-            sprintf(line2,"P%d ISO14443A ID:",readerNumber);
-            lcd->print(line2);
+                            lcd->setCursor(0,1);
+                            sprintf(line2,"P%d ISO14443A ID:",readerNumber);
+                            lcd->print(line2);
   
-            lcd->setCursor(-4,2);
-            lcd->print("                ");
-            lcd->setCursor(-4,2);
-            strcat(hexrealuid," =");
-            lcd->print(hexrealuid);
-          }
+                            lcd->setCursor(-4,2);
+                            lcd->print("                ");
+                            lcd->setCursor(-4,2);
+                            strcat(hexrealuid," =");
+                            lcd->print(hexrealuid);
+                        }
 
-          if (LCD_STATUSLINE > 1) {
-            lcd->setCursor(-4,LCD_STATUSLINE);
-          } else {
-            lcd->setCursor(0,LCD_STATUSLINE);
-          }
-          lcd->print(lcdline);
+                        if (LCD_STATUSLINE > 1) {
+                            lcd->setCursor(-4,LCD_STATUSLINE);
+                        } else {
+                            lcd->setCursor(0,LCD_STATUSLINE);
+                        }
+                        lcd->print(lcdline);
+
+                        card = 1;
+                        readcmd = false;
+                        lastcard = millis();
+                    }
+                } else {
+                    if (debug) {
+                        debugPrint("Nothing");
+                    }
+                    // Regardless of whether we got something here or not, readstatus goes
+                    // back to 0.
+                    readstatus = 0;
+                    card = 0;
+                    readcmd = false;
+                    break;
+                }
+            } 
         }
+    }
+}
 
+void RR10::debugPrint(char* message)
+{
+  if (readerNumber == 1) {
+      lcd->setCursor(0,0);
+  } else {
+    if (LCD_STATUSLINE > 1) {
+      lcd->setCursor(-4,LCD_STATUSLINE);
+    } else {
+      lcd->setCursor(0,LCD_STATUSLINE);
+    }
+  }
 
-        card = 1;
-        readcmd = false;
-        lastcard = millis();
-     } else {
-       // IIDX gets annoyed after 10 minutes of inactivity. I can't figure out
-       // what it's after, so make some crap up.
-       unsigned long curtime = millis();
-       unsigned long kick_interval = 100000;
-       if (curtime > lastcard + kick_interval || curtime < lastcard + 2000) {
-         card = 1;
-         readcmd = false;
-
-         if (curtime > lastcard + kick_interval) {
-           lastcard = millis();
-         }
-         uid[0] = 0xE0;
-         uid[1] = 0x11;
-         for (int i = 2; i < 8; i++) {
-           uid[i] = 0x00;
-         } 
-       }
-     }
-     
-     // Regardless of whether we got something here or not, readstatus goes
-     // back to 0.
-     readstatus = 0;
-     break;
-     
-     
-     }
-   }
+  lcd->print(message);
 }
 
 byte RR10::isCardPresent()
@@ -298,84 +329,80 @@ void RR10::sendCmd(byte* cmd)
 //perform next step of the cmd, return true if cmd is finished
 boolean RR10::cmdUpdate()
 {
-  if(!incmd)
-    return false;
+    if(!incmd)
+        return false;
   
-      switch(comstatus)
+    switch(comstatus)
     {
-	case 0://nothing sent yet, need to send handshake
-		rf_i = 0;
-		rfSerial->write(0x55);
-                timesent = millis();
-		comstatus = 1;
-		break;
-	case 1://handshake sent, waiting for ack back, then send request
-		if(rfSerial->available() == 0 ) //nothing yet
-			break;
+        case 0://nothing sent yet, need to send handshake
+            rf_i = 0;
+            rfSerial->write(0x55);
+            timesent = millis();
+            comstatus = 1;
+            break;
+        case 1://handshake sent, waiting for ack back, then send request
+            if(rfSerial->available() == 0 ) //nothing yet
+                break;
 		
-        	 if(rfSerial->read()!=0xAA) // incorrect answer
-        	 {
-        	  comstatus = 0; //let's try again from the beginning
-        	  break;
-        	 }
-		
-		
-		rfSerial->write(command,command[0]); // send command to serial port
+            if(rfSerial->read()!=0xAA) // incorrect answer
+            {
+                comstatus = 0; //let's try again from the beginning
+                break;
+            }
+    		
+            rfSerial->write(command,command[0]); // send command to serial port
 
+            comstatus = 2;
+            break;		
+        case 2: // Command sent, waiting for handshake, then send hanshake back
+            if(rfSerial->available() == 0 ) //nothing yet
+                break;
 		
-		comstatus = 2;
-		break;		
-	case 2: // Command sent, waiting for handshake, then send hanshake back
-		if(rfSerial->available() == 0 ) //nothing yet
-			break;
+            if(rfSerial->read()!=0xA5) // incorrect answer
+            {
+                comstatus = 0; //let's try again from the beginning
+                break;
+            }
 		
-	    if(rfSerial->read()!=0xA5) // incorrect answer
-	    {
-		    comstatus = 0; //let's try again from the beginning
-			break;
-		}
+            rfSerial->write(0x5A); //send handshake back
 		
-		rfSerial->write(0x5A); //send handshake back
+            comstatus = 3;
+            break;
 		
-		comstatus = 3;
-		break;
-		
-	case 3: // Handshake sent back, waiting for answer	
-		if(rfSerial->available() == 0 ) //nothing yet
-			break;
+        case 3: // Handshake sent back, waiting for answer	
+            if(rfSerial->available() == 0 ) //nothing yet
+                break;
 			
-		rfidp[rf_i] = rfSerial->read(); //add received data to the buffer
-                rf_i++;
+            rfidp[rf_i] = rfSerial->read(); //add received data to the buffer
+            rf_i++;
 		
-		if(rf_i < rfidp[0])//response not fully received yet
-			break;
+            if(rf_i < rfidp[0])//response not fully received yet
+                break;
 		
-		//response has been fully received, let's check it
-			
-		{//compute checksum
-			word chksm=0;
-			for(int i=0;i<rfidp[0]-2;i++)
-				chksm += rfidp[i];
+            //response has been fully received, let's check it		
+            {//compute checksum
+                word chksm=0;
+                for(int i=0;i<rfidp[0]-2;i++)
+                    chksm += rfidp[i];
 	
-			if(chksm != ((((word)rfidp[rfidp[0]-1])<<8) + rfidp[rfidp[0]-2]) ) //if checksum mismatch
-			{
-				comstatus = 0; //let's try again from the beginning
-				break;
-			}
-		}
+                if(chksm != ((((word)rfidp[rfidp[0]-1])<<8) + rfidp[rfidp[0]-2]) ) //if checksum mismatch
+                {
+                    comstatus = 0; //let's try again from the beginning
+                    break;
+                }
+            }
 		
-		//everythings went fine, cmd was sucessful
+            //everythings went fine, cmd was sucessful
 
-		comstatus = 0;
-                incmd = false;
-                return true;
-    }
+            comstatus = 0;
+            incmd = false;
+            return true;
+        }
     
-    if(millis() - timesent >1000) //timeout, let's try again
-      comstatus = 0;
+        if(millis() - timesent >1000) //timeout, let's try again
+            comstatus = 0;
       
-    return false;
-    
+        return false;
 }
 
 // Try to fully process a command
