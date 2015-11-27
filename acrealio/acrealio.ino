@@ -417,11 +417,6 @@ boolean checkRequestChecksum()
 void processRequest(){
   Node *rd = nodes[request[0] - node_id];//get the node to which the command is adressed
   byte answer[256];
-
-  char msg[4];
-  sprintf(msg,"PR%u",request[0]);
-  debugPrint(msg);
-  
   rd->processRequest(request, answer);//have it process the request
   sendAnswer(answer);
 
@@ -529,14 +524,4 @@ long detRate()
   //baudrate has been detected, and port is open at correct baudrate
 
    return baudrates[i];
-  } 
-
-void debugPrint(char* message)
-{
-  lcd.setCursor(8,0);
-
-  char lcdmessage[17];
-  sprintf(lcdmessage,"%s %u",message,millis()/100);
-
-  lcd.print(lcdmessage);
-}
+} 

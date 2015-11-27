@@ -262,7 +262,7 @@ void Reader::debugPrint(char* message)
 short Reader::processRequest(byte* request, byte* answer)
 {  
 
-  bool debug = true;
+  bool debug = false;
   answer[0] = request[0] | 0x80;        // reader id
   answer[1] = request[1];               //  ?
   answer[2] = request[2];               // command
@@ -430,9 +430,9 @@ short Reader::processRequest(byte* request, byte* answer)
       break;
     default:
       if (debug) {
-	char hex[3];
-	sprintf(hex,"%X",answer[2]);
-	debugPrint(hex);
+        char hex[3];
+        sprintf(hex,"%X",answer[2]);
+        debugPrint(hex);
       }
     }
 
