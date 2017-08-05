@@ -25,17 +25,20 @@ void SL015M::setPins(int sensor, HardwareSerial* serialid)
 
 void SL015M::update()
 {
+  char lcdline[17];
+  char hex[2];
+  
   if(!pinset)
     return;
-  if(!readcmd)
+  if(!readcmd) {
     return;
+  }
   
     if(digitalRead(rfSENSOR)==LOW)             // card presence
     {
         
         if(!rfcmdsent)
         {
-        
           rfSerial->write(0xBA);                  // pream
           rfSerial->write(0x02);                  // size
           rfSerial->write(0x31);                  // rfidcommand: get tag info
@@ -86,6 +89,12 @@ void SL015M::update()
                     for(int i=0;i<8;i++)
                     {
                       uid[i] = rfidp[11-i];
+                      if (i == 0) {
+                          sprintf(lcdline,"%02X",uid[i]);
+                       } else {
+                          sprintf(hex,"%02X",uid[i]);
+                          strcat(lcdline,hex);
+                       }
                     }
             
                     if(uid[0] == 0xE0 && uid[1] == 0x04)  // if correct konami card
@@ -94,7 +103,20 @@ void SL015M::update()
                       card = 0;
                       
                     readcmd = false;//reading finished (card found)
-
+                    
+                    if (lcd_enabled) {
+                       int rowA = 0;
+                       if (lcd_rows == 4) {
+                         rowA = 1;
+                       }
+                       
+                       // Omitted: Card type identifier.
+                       
+                       lcd->setCursor(0,rowA);
+                       lcd->print("e-AMUSEMENT PASS");
+                       lcd->setCursor(0,LCD_STATUSLINE);
+                       lcd->print(lcdline);
+                    }
                   }
                 }
               }
